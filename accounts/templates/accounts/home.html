@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Urban Share - Home</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body { background: #f8f9fa; }
+        .home-container {
+            margin-top: 80px;
+            max-width: 500px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+            padding: 40px 30px;
+        }
+        .btn-custom {
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container d-flex justify-content-center">
+        <div class="home-container text-center">
+            <h1 class="mb-4">Welcome to Urban Share</h1>
+            <p class="mb-4 text-muted">Find and share urban listings with ease.</p>
+            <div class="d-flex justify-content-center gap-3">
+                {% if user.is_authenticated %}
+                  <p>Hello {{ user.username }} | <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Logout</button></form></p>
+                {% else %}
+                  <a href="{% url 'login' %}" class="btn btn-primary btn-custom">Login</a>
+                  <a href="{% url 'signup' %}" class="btn btn-outline-primary btn-custom">Signup</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
