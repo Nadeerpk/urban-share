@@ -1,0 +1,52 @@
+{% extends "accounts/base.html" %}
+{% block title %}Manage Booking Requests{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Booking Requests for Your Listings</h2>
+    {% if bookings %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Listing</th>
+                        <th>Guest</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Requested</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in bookings %}
+                        <tr>
+                            <td><a href="{% url 'listing_detail' booking.listing.id %}">{{ booking.listing.title }}</a></td>
+                            <td>{{ booking.user.username }}</td>
+                            <td>{{ booking.start_date }}</td>
+                            <td>{{ booking.end_date }}</td>
+                            <td><span class="badge bg-info text-dark">{{ booking.status|capfirst }}</span></td>
+                            <td>{{ booking.created_at|date:'M d, Y H:i' }}</td>
+                            <td>
+                                {% if booking.status == 'pending' %}
+                                    <form method="post" action="{% url 'approve_booking' booking.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                    </form>
+                                    <form method="post" action="{% url 'reject_booking' booking.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-muted">No actions</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No booking requests for your listings yet.</p>
+    {% endif %}
+</div>
+{% endblock %} 

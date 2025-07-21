@@ -1,0 +1,23 @@
+{% extends "accounts/base.html" %}
+{% block title %}Booking Details{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="mb-4">Booking Details</h3>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Listing:</strong> <a href="{% url 'listing_detail' booking.listing.id %}">{{ booking.listing.title }}</a></li>
+                        <li class="list-group-item"><strong>User:</strong> {{ booking.user.username }}</li>
+                        <li class="list-group-item"><strong>Start Date:</strong> {{ booking.start_date }}</li>
+                        <li class="list-group-item"><strong>End Date:</strong> {{ booking.end_date }}</li>
+                        <li class="list-group-item"><strong>Created At:</strong> {{ booking.created_at|date:'M d, Y H:i' }}</li>
+                    </ul>
+                    <a href="{% url 'listing_detail' booking.listing.id %}" class="btn btn-primary mt-4">Back to Listing</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
