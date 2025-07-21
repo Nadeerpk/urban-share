@@ -1,37 +1,167 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Urban Share - Home</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <style>
-        body { background: #f8f9fa; }
-        .home-container {
-            margin-top: 80px;
-            max-width: 500px;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 16px rgba(0,0,0,0.08);
-            padding: 40px 30px;
-        }
-        .btn-custom {
-            min-width: 120px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container d-flex justify-content-center">
-        <div class="home-container text-center">
-            <h1 class="mb-4">Welcome to Urban Share</h1>
-            <p class="mb-4 text-muted">Find and share urban listings with ease.</p>
+{% extends "accounts/base.html" %}
+{% block title %}Urban Share - Home{% endblock %}
+{% block content %}
+<div class="container d-flex justify-content-center">
+    <div class="home-container text-center">
+        <h1 class="mb-4">Welcome to Urban Share</h1>
+        <p class="mb-4 text-muted">Find and share urban listings with ease.</p>
+        {% if user.is_authenticated %}
+            <div class="alert alert-success">You are logged in as <strong>{{ user.username }}</strong>.</div>
+        {% else %}
             <div class="d-flex justify-content-center gap-3">
-                {% if user.is_authenticated %}
-                  <p>Hello {{ user.username }} | <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Logout</button></form></p>
-                {% else %}
-                  <a href="{% url 'login' %}" class="btn btn-primary btn-custom">Login</a>
-                  <a href="{% url 'signup' %}" class="btn btn-outline-primary btn-custom">Signup</a>
-                {% endif %}
+                <a href="{% url 'login' %}" class="btn btn-primary btn-custom">Login</a>
+                <a href="{% url 'signup' %}" class="btn btn-outline-primary btn-custom">Signup</a>
             </div>
-        </div>
+        {% endif %}
     </div>
-</body>
-</html>
+</div>
+<hr class="my-5">
+<div class="container">
+    <h2 class="mb-4">All Listings</h2>
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-4">
+            <input type="text" name="q" class="form-control" placeholder="Search by title..." value="{{ query|default:'' }}">
+        </div>
+        <div class="col-md-3">
+            <select name="category" class="form-select">
+                <option value="">All Categories</option>
+                {% for value, label in categories %}
+                    <option value="{{ value }}" {% if value == category %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="text" name="location" class="form-control" placeholder="Location..." value="{{ location|default:'' }}">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Search</button>
+        </div>
+    </form>
+    <div class="row">
+        {% for listing in listings %}
+            <div class="col-md-4">
+                <div class="card listing-card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <a href="{% url 'listing_detail' listing.id %}" class="text-decoration-none">
+                                {{ listing.title }}
+                            </a>
+                        </h5>
+                        <p class="card-text">{{ listing.description }}</p>
+                        <p class="card-text"><small class="text-muted">Price: {{ listing.price }}</small></p>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <p>No listings yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% if user.is_authenticated %}
+<hr class="my-5">
+<div class="container">
+    <h2 class="mb-4">My Bookings</h2>
+    {% if user_bookings and user_bookings.count > 0 %}
+        <div class="table-responsive mb-5">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Listing</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in user_bookings %}
+                        <tr>
+                            <td><a href="{% url 'listing_detail' booking.listing.id %}">{{ booking.listing.title }}</a></td>
+                            <td>{{ booking.start_date }}</td>
+                            <td>{{ booking.end_date }}</td>
+                            <td><span class="badge bg-info text-dark">{{ booking.status|capfirst }}</span></td>
+                            <td>{{ booking.created_at|date:'M d, Y H:i' }}</td>
+                            <td><a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">View</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>You have no bookings yet.</p>
+    {% endif %}
+
+    <h2 class="mb-4">Booking Requests for Your Listings</h2>
+    {% if owner_bookings and owner_bookings.count > 0 %}
+        <div class="table-responsive mb-5">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Listing</th>
+                        <th>Guest</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Requested</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in owner_bookings %}
+                        <tr>
+                            <td><a href="{% url 'listing_detail' booking.listing.id %}">{{ booking.listing.title }}</a></td>
+                            <td>{{ booking.user.username }}</td>
+                            <td>{{ booking.start_date }}</td>
+                            <td>{{ booking.end_date }}</td>
+                            <td><span class="badge bg-info text-dark">{{ booking.status|capfirst }}</span></td>
+                            <td>{{ booking.created_at|date:'M d, Y H:i' }}</td>
+                            <td>
+                                {% if booking.status == 'pending' %}
+                                    <form method="post" action="{% url 'approve_booking' booking.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                    </form>
+                                    <form method="post" action="{% url 'reject_booking' booking.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-muted">No actions</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No booking requests for your listings yet.</p>
+    {% endif %}
+</div>
+
+<!-- Add chat threads section here -->
+<hr class="my-5">
+<div class="container">
+    <h2 class="mb-4">My Messages</h2>
+    {% if chat_threads and chat_threads.count > 0 %}
+        <div class="list-group mb-5">
+            {% for thread in chat_threads %}
+                <a href="{% url 'chat' thread.id %}" class="list-group-item list-group-item-action">
+                    <strong>Chat with:
+                        {% for participant in thread.participants.all %}
+                            {% if participant != user %}
+                                {{ participant.username }}{% if not forloop.last %}, {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </strong>
+                    <span class="text-muted float-end">Started: {{ thread.created_at|date:'M d, Y H:i' }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>You have no messages yet.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -22,23 +22,57 @@ class ListingView(APIView):
     permission_classes = [IsAuthenticated]
     renderer_classes = [TemplateHTMLRenderer]
 
-    def get(self, request, pk):
+    def get(self, request, pk=None):
         if pk:
+            from reviews.models import Review
+            from reviews.forms import ReviewForm
+            from django.db.models import Avg
             listing = Listing.objects.get(pk=pk)
+            reviews = Review.objects.filter(listing=listing).order_by('-created_at')
+            average_rating = reviews.aggregate(avg=Avg('rating'))['avg']
+            review_form = ReviewForm()
             return render(request, 'listings/listing_detail.html',
-                          {'listing': listing})
+                          {'listing': listing, 'reviews': reviews, 'review_form': review_form, 'average_rating': average_rating})
         listings = Listing.objects.all()
-        return render(request, 'listings/all_listings.html',
-                      {'listings': listings})
+        query = request.GET.get('q', '')
+        category = request.GET.get('category', '')
+        location = request.GET.get('location', '')
+        if query:
+            listings = listings.filter(title__icontains=query)
+        if category:
+            listings = listings.filter(category=category)
+        if location:
+            listings = listings.filter(location__icontains=location)
+        categories = Listing.CATEGORY_CHOICES
+        context = {
+            'listings': listings,
+            'query': query,
+            'category': category,
+            'location': location,
+            'categories': categories
+        }
+        return render(request, 'accounts/home.html',
+                      context)
 
-    def post(self, request):
-        form = ListingForm(request.POST)
-        if form.is_valid():
-            listing = form.save(commit=False)
-            listing.owner = request.user  # Set the owner here
-            listing.save()
-            return redirect('listings')
-        return render(request, 'listings/create_listing.html', {'form': form})
+    def post(self, request, pk=None):
+        if pk:
+            from reviews.models import Review
+            from reviews.forms import ReviewForm
+            from django.db.models import Avg
+            listing = Listing.objects.get(pk=pk)
+            reviews = Review.objects.filter(listing=listing).order_by('-created_at')
+            average_rating = reviews.aggregate(avg=Avg('rating'))['avg']
+            review_form = ReviewForm(request.POST)
+            if review_form.is_valid():
+                review = review_form.save(commit=False)
+                review.user = request.user
+                review.listing = listing
+                review.save()
+                return redirect('listing_detail', pk=listing.pk)
+            return render(request, 'listings/listing_detail.html',
+                          {'listing': listing, 'reviews': reviews, 'review_form': review_form, 'average_rating': average_rating})
+        # fallback to original post for create listing
+        return super().post(request)
 
     def patch(self, request, pk):
         listing = Listing.objects.get(pk=pk)

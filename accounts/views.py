@@ -5,12 +5,39 @@ from django.contrib import messages
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import CustomUser
+from listings.models import Listing
 
 
 def home(request):
+    query = request.GET.get('q', '')
+    category = request.GET.get('category', '')
+    location = request.GET.get('location', '')
+    listings = Listing.objects.all()
+    if query:
+        listings = listings.filter(title__icontains=query)
+    if category:
+        listings = listings.filter(category=category)
+    if location:
+        listings = listings.filter(location__icontains=location)
+    categories = Listing.CATEGORY_CHOICES
+    context = {
+        'listings': listings,
+        'query': query,
+        'category': category,
+        'location': location,
+        'categories': categories
+    }
     if request.user.is_authenticated:
-        return redirect('listings')  # Use your URL name for the listings page
-    return render(request, 'accounts/home.html')
+        from bookings.models import Booking
+        from messaging.models import MessageThread
+        user_bookings = Booking.objects.filter(user=request.user).order_by('-created_at')
+        owner_listings = Listing.objects.filter(owner=request.user)
+        owner_bookings = Booking.objects.filter(listing__in=owner_listings).order_by('-created_at')
+        chat_threads = MessageThread.objects.filter(participants=request.user).order_by('-created_at')
+        context['user_bookings'] = user_bookings
+        context['owner_bookings'] = owner_bookings
+        context['chat_threads'] = chat_threads
+    return render(request, 'accounts/home.html', context)
 
 
 # Create your views here.
