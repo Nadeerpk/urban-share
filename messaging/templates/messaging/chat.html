@@ -1,0 +1,94 @@
+{% extends 'accounts/base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-white d-flex align-items-center justify-content-between border-0 pb-2">
+                    <div>
+                        <a href="{% url 'chat_list' %}" class="btn btn-outline-secondary btn-sm me-2"><i class="bi bi-arrow-left"></i> Back</a>
+                        <span class="fw-bold">
+                            {% for participant in thread.participants.all %}
+                                {% if participant != request.user %}
+                                    {{ participant.username }}
+                                {% endif %}
+                            {% endfor %}</span>
+                    </div>
+                </div>
+                <div id="chat-log" class="card-body px-4 py-3" style="height: 400px; overflow-y: scroll; background: #f9f9f9; border-radius: 12px;">
+                    {% for message in messages %}
+                        <div class="mb-2 d-flex {% if message.sender == request.user %}justify-content-end{% else %}justify-content-start{% endif %}">
+                            <div class="chat-bubble {% if message.sender == request.user %}bg-primary text-white{% else %}bg-light text-dark{% endif %}">
+                                <div class="small fw-semibold mb-1">{% if message.sender != request.user %}{{ message.sender.username }}{%endif%}</div>
+                                <div>{{ message.content }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="card-footer bg-white border-0 pt-0">
+                    <form id="chat-form" class="d-flex align-items-center gap-2">
+                        <input id="chat-message-input" type="text" class="form-control rounded-pill" placeholder="Type your message..." autocomplete="off" required />
+                        <button id="chat-message-submit" type="submit" class="btn btn-primary rounded-pill px-4">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<style>
+.chat-bubble {
+    max-width: 70%;
+    padding: 0.75rem 1.25rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    word-break: break-word;
+}
+.bg-light {
+    background: #e6e9ec !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const threadId = {{ thread.id }};
+    const username = "{{ request.user.username|escapejs }}";
+    const chatLog = document.getElementById('chat-log');
+    const chatInput = document.getElementById('chat-message-input');
+    const chatForm = document.getElementById('chat-form');
+
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const chatSocket = new WebSocket(
+        wsScheme + '://' + window.location.host + '/ws/chat/' + threadId + '/'
+    );
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const messageElem = document.createElement('div');
+        messageElem.className = 'mb-2 d-flex ' + (data.sender === username ? 'justify-content-end' : 'justify-content-start');
+        messageElem.innerHTML = `<div class='chat-bubble ${data.sender === username ? 'bg-primary text-white' : 'bg-light text-dark'}'><div class='small fw-semibold mb-1'>${data.sender}</div><div>${data.message}</div></div>`;
+        chatLog.appendChild(messageElem);
+        chatLog.scrollTop = chatLog.scrollHeight;
+    };
+
+    chatSocket.onclose = function(e) {
+        const messageElem = document.createElement('div');
+        messageElem.innerHTML = '<em>Chat closed.</em>';
+        chatLog.appendChild(messageElem);
+    };
+
+    chatForm.onsubmit = function(e) {
+        e.preventDefault();
+        const message = chatInput.value;
+        if (message.trim() === "") return;
+        chatSocket.send(JSON.stringify({
+            'message': message
+        }));
+        chatInput.value = '';
+    };
+</script>
+{% endblock %} 
