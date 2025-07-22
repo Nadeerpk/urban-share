@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: django-web
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: daphne urban_share.asgi:application -p 8000 -b 0.0.0.0
+    postDeployCommand: |
+      python manage.py migrate --noinput
+      python manage.py collectstatic --noinput
+    envVars:
+      - fromGroup: django-env
+
+  - type: worker
+    name: celery-worker
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A urban_share worker --loglevel=info
+    envVars:
+      - fromGroup: django-env
