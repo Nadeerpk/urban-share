@@ -16,7 +16,7 @@
                     </div>
                 </div>
                 <div id="chat-log" class="card-body px-4 py-3" style="height: 400px; overflow-y: scroll; background: #f9f9f9; border-radius: 12px;">
-                    {% for message in messages %}
+                    {% for message in texts %}
                         <div class="mb-2 d-flex {% if message.sender == request.user %}justify-content-end{% else %}justify-content-start{% endif %}">
                             <div class="chat-bubble {% if message.sender == request.user %}bg-primary text-white{% else %}bg-light text-dark{% endif %}">
                                 <div class="small fw-semibold mb-1">{% if message.sender != request.user %}{{ message.sender.username }}{%endif%}</div>
@@ -75,11 +75,6 @@
         chatLog.scrollTop = chatLog.scrollHeight;
     };
 
-    chatSocket.onclose = function(e) {
-        const messageElem = document.createElement('div');
-        messageElem.innerHTML = '<em>Chat closed.</em>';
-        chatLog.appendChild(messageElem);
-    };
 
     chatForm.onsubmit = function(e) {
         e.preventDefault();
