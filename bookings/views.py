@@ -59,6 +59,13 @@ def owner_bookings(request):
 
 
 @login_required
+def booking_requests_view(request):
+    owner_listings = Listing.objects.filter(owner=request.user)
+    owner_bookings = Booking.objects.filter(listing__in=owner_listings).order_by('-created_at')
+    return render(request, 'accounts/booking_requests.html', {'owner_bookings': owner_bookings})
+
+
+@login_required
 def approve_booking(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
     if booking.listing.owner == request.user and booking.status == 'pending' and request.method == 'POST':

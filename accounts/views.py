@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -27,16 +28,6 @@ def home(request):
         'location': location,
         'categories': categories
     }
-    if request.user.is_authenticated:
-        from bookings.models import Booking
-        from messaging.models import MessageThread
-        user_bookings = Booking.objects.filter(user=request.user).order_by('-created_at')
-        owner_listings = Listing.objects.filter(owner=request.user)
-        owner_bookings = Booking.objects.filter(listing__in=owner_listings).order_by('-created_at')
-        chat_threads = MessageThread.objects.filter(participants=request.user).order_by('-created_at')
-        context['user_bookings'] = user_bookings
-        context['owner_bookings'] = owner_bookings
-        context['chat_threads'] = chat_threads
     return render(request, 'accounts/home.html', context)
 
 
@@ -97,3 +88,9 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             samesite='Lax'
         )
         return response
+
+
+@login_required
+def profile_view(request):
+    """View for user profile/account details"""
+    return render(request, 'accounts/profile.html', {'user': request.user})

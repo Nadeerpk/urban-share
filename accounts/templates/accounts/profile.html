@@ -1,0 +1,86 @@
+{% extends "accounts/base.html" %}
+{% block title %}Urban Share - Profile{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-user me-2"></i>Account Details</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-4">
+                            {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture.url }}" alt="Profile Picture" class="img-fluid rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                                    <i class="fas fa-user fa-4x text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Username:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.username }}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Email:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.email }}
+                                </div>
+                            </div>
+                            {% if user.phone_number %}
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Phone:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.phone_number }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if user.date_of_birth %}
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Date of Birth:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.date_of_birth|date:"F d, Y" }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Date Joined:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.date_joined|date:"F d, Y" }}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4">
+                                    <strong>Last Login:</strong>
+                                </div>
+                                <div class="col-sm-8">
+                                    {{ user.last_login|date:"F d, Y H:i" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <a href="#" class="btn btn-primary me-2"><i class="fas fa-edit me-1"></i>Edit Profile</a>
+                        <a href="{% url 'home' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Back to Home</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
