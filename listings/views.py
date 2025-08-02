@@ -10,10 +10,19 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def create_listing(request):
-    form = ListingForm()
+    if request.method == 'POST':
+        form = ListingForm(request.POST, request.FILES)
+        if form.is_valid():
+            listing = form.save(commit=False)
+            listing.owner = request.user
+            listing.save()
+            return redirect('listing_detail', pk=listing.pk)
+    else:
+        form = ListingForm()
+
     return render(request, 'listings/create_listing.html', {'form': form})
 
 
@@ -27,12 +36,18 @@ class ListingView(APIView):
             from reviews.models import Review
             from reviews.forms import ReviewForm
             from django.db.models import Avg
-            listing = Listing.objects.get(pk=pk)
-            reviews = Review.objects.filter(listing=listing).order_by('-created_at')
-            average_rating = reviews.aggregate(avg=Avg('rating'))['avg']
-            review_form = ReviewForm()
-            return render(request, 'listings/listing_detail.html',
-                          {'listing': listing, 'reviews': reviews, 'review_form': review_form, 'average_rating': average_rating})
+            from django.shortcuts import get_object_or_404
+            try:
+                listing = get_object_or_404(Listing, pk=pk)
+                reviews = Review.objects.filter(listing=listing).order_by('-created_at')
+                average_rating = reviews.aggregate(avg=Avg('rating'))['avg']
+                review_form = ReviewForm()
+                return render(request, 'listings/listing_detail.html',
+                              {'listing': listing, 'reviews': reviews, 'review_form': review_form, 'average_rating': average_rating})
+            except (ValueError, TypeError):
+                # Handle invalid pk format
+                from django.http import Http404
+                raise Http404("Invalid listing ID")
         listings = Listing.objects.all()
         query = request.GET.get('q', '')
         category = request.GET.get('category', '')

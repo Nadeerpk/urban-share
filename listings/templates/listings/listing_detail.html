@@ -1,25 +1,140 @@
 {% extends "accounts/base.html" %}
 {% block title %}Listing Detail - {{ listing.title }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #listing-map {
+        height: 300px;
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    .listing-image {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .image-container {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .location-details {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .location-icon {
+        color: #dc3545;
+        margin-right: 8px;
+    }
+    .no-image-placeholder {
+        background-color: #e9ecef;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 40px;
+        text-align: center;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-body">
+                    <!-- Listing Image -->
+                    {% if listing.image %}
+                        <div class="image-container">
+                            <img src="{{ listing.image.url }}" alt="{{ listing.title }}" class="listing-image">
+                        </div>
+                    {% else %}
+                        <div class="no-image-placeholder">
+                            <i class="fas fa-image fa-3x mb-3"></i>
+                            <p>No image available for this listing</p>
+                        </div>
+                    {% endif %}
+                    
                     <h1 class="display-5 mb-3">{{ listing.title }}</h1>
                     <p class="lead">{{ listing.description }}</p>
                     <hr class="my-4">
-                    <div class="mb-2"><strong>Category:</strong> {{ listing.category }}</div>
-                    <div class="mb-2"><strong>Location:</strong> {{ listing.location }}</div>
-                    <div class="mb-2"><strong>Owner:</strong> {{ listing.owner.username }}</div>
-                    <div class="h4 text-success mb-4"><strong>Price: ${{ listing.price }}</strong></div>
-                    {% if listing.is_available %}
+                    
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-2"><strong>Category:</strong> {{ listing.get_category_display }}</div>
+                            <div class="mb-2"><strong>Owner:</strong> {{ listing.owner.username }}</div>
+                            <div class="mb-2"><strong>Posted:</strong> {{ listing.created_at|date:'M d, Y' }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="h4 text-success mb-2"><strong>Price: ${{ listing.price }}</strong></div>
+                            <div class="mb-2">
+                                <strong>Status:</strong> 
+                                {% if listing.is_available %}
+                                    <span class="badge bg-success">Available</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Not Available</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Location Details -->
+                    <div class="location-details">
+                        <h5 class="mb-3"><i class="fas fa-map-marker-alt location-icon"></i>Location Details</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-2"><strong>General Location:</strong> {{ listing.location }}</div>
+                                {% if listing.address %}
+                                    <div class="mb-2"><strong>Full Address:</strong> {{ listing.address }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {% if listing.latitude and listing.longitude %}
+                                    <div class="mb-2"><strong>Coordinates:</strong></div>
+                                    <div class="small text-muted">
+                                        Lat: {{ listing.latitude|floatformat:6 }}<br>
+                                        Lng: {{ listing.longitude|floatformat:6 }}
+                                    </div>
+                                {% else %}
+                                    <div class="text-muted">No coordinates available</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Interactive Map -->
+                    {% if listing.latitude and listing.longitude %}
                         <div class="mb-4">
-                            <a href="{% url 'create_booking' listing.id %}" class="btn btn-success">Book Now</a>
+                            <h5 class="mb-3"><i class="fas fa-map me-2"></i>Location on Map</h5>
+                            <div id="listing-map" 
+                                 data-lat="{{ listing.latitude }}" 
+                                 data-lng="{{ listing.longitude }}"
+                                 data-title="{{ listing.title|escapejs }}"
+                                 data-location="{{ listing.location|escapejs }}">
+                            </div>
                         </div>
                     {% endif %}
-                    <div class="mt-4">
-                        <a href="{% url 'new_chat' %}?receiver={{ listing.owner.id }}" class="btn btn-primary">Chat with Owner</a>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% if listing.is_available %}
+                            <a href="{% url 'create_booking' listing.id %}" class="btn btn-success">
+                                <i class="fas fa-calendar-check me-2"></i>Book Now
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'new_chat' %}?receiver={{ listing.owner.id }}" class="btn btn-primary">
+                            <i class="fas fa-comments me-2"></i>Chat with Owner
+                        </a>
+                        {% if user == listing.owner %}
+                            <a href="#" class="btn btn-outline-secondary">
+                                <i class="fas fa-edit me-2"></i>Edit Listing
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -80,4 +195,52 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if listing.latitude and listing.longitude %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            // Get data from the map element
+            var mapElement = document.getElementById('listing-map');
+            if (!mapElement) {
+                console.log('Map element not found');
+                return;
+            }
+            
+            var lat = parseFloat(mapElement.getAttribute('data-lat'));
+            var lng = parseFloat(mapElement.getAttribute('data-lng'));
+            var title = mapElement.getAttribute('data-title');
+            var location = mapElement.getAttribute('data-location');
+            
+            // Validate coordinates
+            if (isNaN(lat) || isNaN(lng)) {
+                console.log('Invalid coordinates:', lat, lng);
+                return;
+            }
+            
+            // Initialize map for listing location
+            var map = L.map('listing-map').setView([lat, lng], 15);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Add marker for listing location
+            var marker = L.marker([lat, lng]).addTo(map);
+            
+            // Add popup with listing title
+            if (title && location) {
+                marker.bindPopup("<strong>" + title + "</strong><br>" + location).openPopup();
+            }
+        } catch (error) {
+            console.error('Error initializing map:', error);
+        }
+    });
+</script>
+{% endif %}
 {% endblock %}

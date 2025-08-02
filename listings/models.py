@@ -23,6 +23,9 @@ class Listing(models.Model):
     is_available = models.BooleanField(default=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     image = models.ImageField(upload_to='listings/', blank=True, null=True)
+    latitude = models.FloatField(null=True)
+    longitude = models.FloatField(null=True)
+    address = models.CharField(max_length=255, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
